@@ -1,0 +1,24 @@
+{
+  "name": "Bookmarkendex",
+  "version": "1.0",
+  "manifest_version": 2,
+  "description": "",
+  "omnibox": {
+    "keyword": "b"
+  },
+  "background": {
+    "scripts": [
+      "bookmark.js",
+      "search.js",
+      "result.js",
+      "event.js"
+    ],
+    "persistent": false
+  },
+  "permissions": [
+    "bookmarks"
+  ],
+  "icons": {
+    "16": "icon.svg"
+  }
+}
