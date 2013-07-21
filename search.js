@@ -1,19 +1,19 @@
-var convertQueryToRegExp = function (query) {
+function convertQueryToRegExp(query) {
   var letters = query.split('');
 
-  var escapedLetters = query.split('').map(function (letter) {
+  var escapedLetters = query.split('').map(function(letter) {
     return '\\u' + ('0000' + letter.charCodeAt(0).toString(16)).slice(-4);
   });
 
   var regex = RegExp(
-    escapedLetters.join('(\\S*?)'),
-    'i');
+      escapedLetters.join('(\\S*?)'),
+      'i');
   regex.letters = letters;
 
   return regex;
-};
+}
 
-var initFlags = function (text) {
+function initFlags(text) {
   var flags = [];
 
   for (var i = 0; i < text.length; i += 1) {
@@ -21,15 +21,15 @@ var initFlags = function (text) {
   }
 
   return flags;
-};
+}
 
-var updateMatchedLetters = function (text, flags, successes, query) {
+function updateMatchedLetters(text, flags, successes, query) {
   var unmatchedSections = query.exec(text);
 
   if (unmatchedSections) {
     var textIndex = unmatchedSections.index;
 
-    query.letters.forEach(function (queryLetter, sectionIndex) {
+    query.letters.forEach(function(queryLetter, sectionIndex) {
       for (var i = 0; i < queryLetter.length; i += 1) {
         flags[textIndex] = true;
         textIndex += 1;
@@ -42,28 +42,28 @@ var updateMatchedLetters = function (text, flags, successes, query) {
 
     successes.push(query);
   }
-};
+}
 
-var findMatchedLetters = function (queries) {
-  return function (text) {
+function findMatchedLetters(queries) {
+  return function(text) {
     var flags = initFlags(text);
     var successes = [];
 
-    queries.forEach(function (query) {
+    queries.forEach(function(query) {
       updateMatchedLetters(text, flags, successes, query);
     });
 
     return { text: text, flags: flags, successes: successes };
   };
-};
+}
 
-var searchOneBookmark = function (bookmark, queries) {
+function searchOneBookmark(bookmark, queries) {
   // TODO: run the queries on the whole name, not each word
   return {
     url: bookmark.url,
     title: bookmark.title.split(' ').map(findMatchedLetters(queries)),
-    parents: bookmark.parents.map(function (parentTitle) {
+    parents: bookmark.parents.map(function(parentTitle) {
       return parentTitle.split(' ').map(findMatchedLetters(queries));
     })
   };
-};
+}
