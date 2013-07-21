@@ -2,10 +2,22 @@
   "name": "Bookmarkendex",
   "version": "1.0",
   "manifest_version": 2,
-  "description": "",
+
+  "description": "A search extension that provides quick access to bookmarks.",
+  "icons": {
+    "16": "icon_16.png",
+    "24": "icon_24.png",
+    "32": "icon_32.png",
+    "48": "icon_48.png",
+    "64": "icon_64.png",
+    "128": "icon_128.png",
+    "256": "icon_256.png"
+  },
+
   "omnibox": {
     "keyword": "b"
   },
+
   "background": {
     "scripts": [
       "bookmark.js",
@@ -15,10 +27,11 @@
     ],
     "persistent": false
   },
+
+  "homepage_url": "https://github.com/dcecile/bookmarkendex",
+
+  "incognito": "split",
   "permissions": [
     "bookmarks"
-  ],
-  "icons": {
-    "16": "icon.svg"
-  }
+  ]
 }
