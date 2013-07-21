@@ -10,14 +10,14 @@ Usage
 
 After installing in Chrome or Chromium...
 
-  1) Activate the omnibar. _CTRL-L_ and _⌘-L_ are keyboard shortcuts
+  1. Activate the omnibar. _CTRL-L_ and _⌘-L_ are keyboard shortcuts
      for doing this.
 
-  2) Type 'b', then press _TAB_ to turn on Bookmarkendex searching.
+  2. Type 'b', then press _TAB_ to turn on Bookmarkendex searching.
 
-  3) Type one of your bookmark's names.
+  3. Type one of your bookmark's names.
 
-  4) Press _ENTER_ to jump to the first result. Or, use the up/down
+  4. Press _ENTER_ to jump to the first result. Or, use the up/down
      arrow keys and then press _ENTER_ to select a different result.
 
 Note that you can skip letters in your search text. So, if you search

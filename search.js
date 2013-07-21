@@ -5,9 +5,8 @@ var convertQueryToRegExp = function (query) {
     return '\\u' + ('0000' + letter.charCodeAt(0).toString(16)).slice(-4);
   });
 
-  // TODO: don't bother matching the start (it greedily pushes the search back)
   var regex = RegExp(
-    '^(.*)' + escapedLetters.join('(\\S*?)'),
+    escapedLetters.join('(\\S*?)'),
     'i');
   regex.letters = letters;
 
@@ -25,16 +24,19 @@ var initFlags = function (text) {
 };
 
 var updateMatchedLetters = function (text, flags, successes, query) {
-  var unmatchedText = query.exec(text);
+  var unmatchedSections = query.exec(text);
 
-  if (unmatchedText) {
-    var j = 0;
+  if (unmatchedSections) {
+    var textIndex = unmatchedSections.index;
 
-    query.letters.forEach(function (letter, i) {
-      j += unmatchedText[i + 1].length;
+    query.letters.forEach(function (queryLetter, sectionIndex) {
+      for (var i = 0; i < queryLetter.length; i += 1) {
+        flags[textIndex] = true;
+        textIndex += 1;
+      }
 
-      for (var k = 0; k < letter.length; k += 1, j += 1) {
-        flags[j] = true;
+      if (sectionIndex < unmatchedSections.length - 1) {
+        textIndex += unmatchedSections[sectionIndex + 1].length;
       }
     });
 
