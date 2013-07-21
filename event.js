@@ -40,9 +40,9 @@ var updateResults = function (query, suggest) {
         setDefaultSuggestion('No bookmarks found for <match>%s</match>');
       }
       else {
-        setDefaultSuggestion('Jump to <match>' + matches[0].title + '</match>');
+        setDefaultSuggestion(matches[0].description);
 
-        suggest(matches.map(function (match) {
+        suggest(matches.slice(1).map(function (match) {
           return {
             content: match.url,
             description: match.description

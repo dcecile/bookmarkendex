@@ -1,4 +1,6 @@
 var escapeXml = function (text) {
+  // Because JavaScript does not have builtin XML escaping
+  // APIs (besides the DOM), just escape everything in hex
   return text.split('').map(function (letter) {
     return '&#x' + letter.charCodeAt(0).toString(16) + ';';
   }).join('');
@@ -63,7 +65,6 @@ function findMatches(bookmarks, fullQuery) {
   });
 
   return positiveResults.map(function (result) {
-    var title = result.title.map(function (search) { return escapeXml(search.text); }).join(' ');
     var description = displaySearches(result.title) +
       ' <dim>-</dim> <url>' + escapeXml(result.url) + '</url>';
     
@@ -73,7 +74,6 @@ function findMatches(bookmarks, fullQuery) {
 
     return {
       url: result.url,
-      title: title,
       description: description
     };
   });
