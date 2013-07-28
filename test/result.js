@@ -48,6 +48,12 @@ unitTest(findMatches, function(check) {
         'http://three.net'
       ],
       simplify(findMatches(bookmarks, 'ue')));
+
+  check('forced title match',
+      [
+        'http://two.net'
+      ],
+      simplify(findMatches(bookmarks, 'a')));
 });
 
 unitTest(escapeXml, function(check) {
@@ -59,37 +65,24 @@ unitTest(escapeXml, function(check) {
 unitTest(formatMatchedLetters, function(check) {
   check('one letter match',
       '&#x61;<match>&#x62;</match>&#x63;',
-      formatMatchedLetters([{
+      formatMatchedLetters({
         text: 'abc',
         flags: [false, true, false]
-      }]));
+      }));
 
   check('nonmatch',
       '&#x61;&#x62;&#x63;',
-      formatMatchedLetters([{
+      formatMatchedLetters({
         text: 'abc',
         flags: [false, false, false]
-      }]));
+      }));
 
   check('consecutive letter match',
       '<match>&#x61;&#x62;</match>&#x63;',
-      formatMatchedLetters([{
+      formatMatchedLetters({
         text: 'abc',
         flags: [true, true, false]
-      }]));
-
-  check('word joining',
-      '&#x61;<match>&#x62;</match>&#x63; <match>&#x64;</match>',
-      formatMatchedLetters([
-        {
-          text: 'abc',
-          flags: [false, true, false]
-        },
-        {
-          text: 'd',
-          flags: [true]
-        }
-      ]));
+      }));
 });
 
 unitTest(formatResults, function(check) {
@@ -112,31 +105,27 @@ unitTest(formatResults, function(check) {
       formatResults([
         {
           url: 'http://o',
-          title: [
-            {
-              text: 'p',
-              flags: [true]
-            }
-          ],
+          title: {
+            text: 'p',
+            flags: [true]
+          },
           parents: [
-            [{
+            {
               text: 'a',
               flags: [false]
-            }],
-            [{
+            },
+            {
               text: 'b',
               flags: [true]
-            }]
+            }
           ]
         },
         {
           url: 'http://t',
-          title: [
-            {
-              text: 'q',
-              flags: [true]
-            }
-          ],
+          title: {
+            text: 'q',
+            flags: [true]
+          },
           parents: []
         }
       ]));

@@ -18,12 +18,10 @@ function findMatches(bookmarks, fullQuery) {
       });
     };
 
-    result.title.forEach(recordSuccesses);
+    recordSuccesses(result.title);
 
     if (overallSuccesses.count > 0) {
-      result.parents.forEach(function(parentTitle) {
-        parentTitle.forEach(recordSuccesses);
-      });
+      result.parents.forEach(recordSuccesses);
     }
 
     return queries.every(function(query) {
@@ -42,29 +40,27 @@ function escapeXml(text) {
   }).join('');
 }
 
-function formatMatchedLetters(searches) {
-  return searches.map(function(search) {
-    var result = '';
+function formatMatchedLetters(search) {
+  var result = '';
 
-    var currentlyMatching = false;
+  var currentlyMatching = false;
 
-    search.flags.forEach(function(flag, i) {
-      if (!currentlyMatching && flag) {
-        result += '<match>';
-      }
-      else if (currentlyMatching && !flag) {
-        result += '</match>';
-      }
-      result += escapeXml(search.text[i]);
-      currentlyMatching = flag;
-    });
-
-    if (currentlyMatching) {
+  search.flags.forEach(function(flag, i) {
+    if (!currentlyMatching && flag) {
+      result += '<match>';
+    }
+    else if (currentlyMatching && !flag) {
       result += '</match>';
     }
+    result += escapeXml(search.text[i]);
+    currentlyMatching = flag;
+  });
 
-    return result;
-  }).join(' ');
+  if (currentlyMatching) {
+    result += '</match>';
+  }
+
+  return result;
 }
 
 function formatResults(positiveResults) {

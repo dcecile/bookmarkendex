@@ -4,151 +4,175 @@ unitTest(convertQueryToRegExp, function(check) {
       convertQueryToRegExp('a').toString());
 
   check('single term',
-      '/\\u0061(\\S*?)\\u0062(\\S*?)\\u0063/i',
+      '/\\u0061(.*?)\\u0062(.*?)\\u0063/i',
       convertQueryToRegExp('abc').toString());
 });
 
-unitTest(searchOneWord, function(check) {
+unitTest(searchOneField, function(check) {
+  function makeFlags(template) {
+    return template.split('').map(function(letter) {
+      return letter === ' ' ? false : true;
+    });
+  }
+
   var singleLetterQuery = /u/i;
   singleLetterQuery.letters = ['u'];
 
-  var multipleLetterQuery = /a(\S*?)t(\S*?)e/i;
+  var multipleLetterQuery = /a(.*?)t(.*?)e/i;
   multipleLetterQuery.letters = ['a', 't', 'e'];
 
   check('single letter match',
       {
         text: 'buck',
-        flags: [false, true, false, false],
+        flags: makeFlags(' u  '),
         successes: [singleLetterQuery]
       },
-      searchOneWord([singleLetterQuery])('buck'));
+      searchOneField('buck', [singleLetterQuery]));
 
   check('single letter nonmatch',
       {
         text: 'back',
-        flags: [false, false, false, false],
+        flags: makeFlags('    '),
         successes: []
       },
-      searchOneWord([singleLetterQuery])('back'));
+      searchOneField('back', [singleLetterQuery]));
 
   check('multiple letter consecutive match',
       {
         text: 'skated',
-        flags: [false, false, true, true, true, false],
+        flags: makeFlags('  ate '),
         successes: [multipleLetterQuery]
       },
-      searchOneWord([multipleLetterQuery])('skated'));
+      searchOneField('skated', [multipleLetterQuery]));
 
   check('multiple letter gaps match',
       {
         text: 'watches',
-        flags: [false, true, true, false, false, true, false],
+        flags: makeFlags(' at  e '),
         successes: [multipleLetterQuery]
       },
-      searchOneWord([multipleLetterQuery])('watches'));
+      searchOneField('watches', [multipleLetterQuery]));
+
+  check('multiple letter incorrect gaps match',
+      {
+        text: 'abate',
+        flags: makeFlags('a  te'),
+        successes: [multipleLetterQuery]
+      },
+      searchOneField('abate', [multipleLetterQuery]));
 
   check('multiple letter nonmatch',
       {
         text: 'amidst',
-        flags: [false, false, false, false, false, false],
+        flags: makeFlags('      '),
         successes: []
       },
-      searchOneWord([multipleLetterQuery])('amidst'));
+      searchOneField('amidst', [multipleLetterQuery]));
 
   check('case insensitive match',
       {
         text: 'BUCK',
-        flags: [false, true, false, false],
+        flags: makeFlags(' U  '),
         successes: [singleLetterQuery]
       },
-      searchOneWord([singleLetterQuery])('BUCK'));
+      searchOneField('BUCK', [singleLetterQuery]));
 
   check('first match',
       {
         text: 'autumn',
-        flags: [false, true, false, false, false, false],
+        flags: makeFlags(' u    '),
         successes: [singleLetterQuery]
       },
-      searchOneWord([singleLetterQuery])('autumn'));
+      searchOneField('autumn', [singleLetterQuery]));
+
+  check('cross-word match',
+      {
+        text: 'a tree',
+        flags: makeFlags('a t e '),
+        successes: [multipleLetterQuery]
+      },
+      searchOneField('a tree', [multipleLetterQuery]));
 
   check('multiple query full in-order match',
       {
         text: 'circulate',
-        flags: [false, false, false, false, true, false, true, true, true],
+        flags: makeFlags('    u ate'),
         successes: [singleLetterQuery, multipleLetterQuery]
       },
-      searchOneWord([singleLetterQuery, multipleLetterQuery])('circulate'));
+      searchOneField('circulate', [singleLetterQuery, multipleLetterQuery]));
 
   check('multiple query full out-of-order match',
       {
         text: 'wasteful',
-        flags: [false, true, false, true, true, false, true, false],
+        flags: makeFlags(' a te u '),
         successes: [singleLetterQuery, multipleLetterQuery]
       },
-      searchOneWord([singleLetterQuery, multipleLetterQuery])('wasteful'));
+      searchOneField('wasteful', [singleLetterQuery, multipleLetterQuery]));
 
   check('multiple query full overlapping match',
       {
         text: 'abstruse',
-        flags: [true, false, false, true, false, true, false, true],
+        flags: makeFlags('a  t u e'),
         successes: [singleLetterQuery, multipleLetterQuery]
       },
-      searchOneWord([singleLetterQuery, multipleLetterQuery])('abstruse'));
+      searchOneField('abstruse', [singleLetterQuery, multipleLetterQuery]));
 
   check('multiple query nonmatch',
       {
         text: 'amidst',
-        flags: [false, false, false, false, false, false],
+        flags: makeFlags('      '),
         successes: []
       },
-      searchOneWord([singleLetterQuery, multipleLetterQuery])('amidst'));
+      searchOneField('amidst', [singleLetterQuery, multipleLetterQuery]));
 });
 
 unitTest(searchOneBookmark, function(check) {
+  function makeFlags(template) {
+    return template.split('').map(function(letter) {
+      return letter === ' ' ? false : true;
+    });
+  }
+
   var bookmark = {
     url: 'http://one.net',
     title: 'purple site',
     parents: ['alpha', 'beta']
   };
 
-  var queryPurple = /p(\S*?)u(\S*?)r(\S*?)p(\S*?)l(\S*?)e/i;
+  var queryPurple = /p(.*?)u(.*?)r(.*?)p(.*?)l(.*?)e/i;
   queryPurple.letters = 'purple'.split('');
 
-  var queryOne = /o(\S*?)n(\S*?)e/i;
+  var queryOne = /o(.*?)n(.*?)e/i;
   queryOne.letters = 'one'.split('');
 
   var queryE = /e/i;
   queryE.letters = 'e'.split('');
 
-  var queryPh = /p(\S*?)h/i;
+  var queryPh = /p(.*?)h/i;
   queryPh.letters = 'ph'.split('');
+
+  var queryPs = /p(.*?)s/i;
+  queryPs.letters = 'ps'.split('');
 
   check('simple title match',
       {
         url: 'http://one.net',
-        title: [
+        title: {
+          text: 'purple site',
+          flags: makeFlags('purple     '),
+          successes: [queryPurple]
+        },
+        parents: [
           {
-            text: 'purple',
-            flags: [true, true, true, true, true, true],
-            successes: [queryPurple]
+            text: 'alpha',
+            flags: makeFlags('     '),
+            successes: []
           },
           {
-            text: 'site',
-            flags: [false, false, false, false],
+            text: 'beta',
+            flags: makeFlags('    '),
             successes: []
           }
-        ],
-        parents: [
-          [{
-            text: 'alpha',
-            flags: [false, false, false, false, false],
-            successes: []
-          }],
-          [{
-            text: 'beta',
-            flags: [false, false, false, false],
-            successes: []
-          }]
         ]
       },
       searchOneBookmark(bookmark, [queryPurple]));
@@ -156,29 +180,22 @@ unitTest(searchOneBookmark, function(check) {
   check('url impossible match',
       {
         url: 'http://one.net',
-        title: [
+        title: {
+          text: 'purple site',
+          flags: makeFlags('           '),
+          successes: []
+        },
+        parents: [
           {
-            text: 'purple',
-            flags: [false, false, false, false, false, false],
+            text: 'alpha',
+            flags: makeFlags('     '),
             successes: []
           },
           {
-            text: 'site',
-            flags: [false, false, false, false],
+            text: 'beta',
+            flags: makeFlags('    '),
             successes: []
           }
-        ],
-        parents: [
-          [{
-            text: 'alpha',
-            flags: [false, false, false, false, false],
-            successes: []
-          }],
-          [{
-            text: 'beta',
-            flags: [false, false, false, false],
-            successes: []
-          }]
         ]
       },
       searchOneBookmark(bookmark, [queryOne]));
@@ -186,29 +203,22 @@ unitTest(searchOneBookmark, function(check) {
   check('duplicate match',
       {
         url: 'http://one.net',
-        title: [
+        title: {
+          text: 'purple site',
+          flags: makeFlags('     e     '),
+          successes: [queryE]
+        },
+        parents: [
           {
-            text: 'purple',
-            flags: [false, false, false, false, false, true],
-            successes: [queryE]
+            text: 'alpha',
+            flags: makeFlags('     '),
+            successes: []
           },
           {
-            text: 'site',
-            flags: [false, false, false, true],
+            text: 'beta',
+            flags: makeFlags(' e  '),
             successes: [queryE]
           }
-        ],
-        parents: [
-          [{
-            text: 'alpha',
-            flags: [false, false, false, false, false],
-            successes: []
-          }],
-          [{
-            text: 'beta',
-            flags: [false, true, false, false],
-            successes: [queryE]
-          }]
         ]
       },
       searchOneBookmark(bookmark, [queryE]));
@@ -216,30 +226,46 @@ unitTest(searchOneBookmark, function(check) {
   check('title and parent match',
       {
         url: 'http://one.net',
-        title: [
+        title: {
+          text: 'purple site',
+          flags: makeFlags('purple     '),
+          successes: [queryPurple]
+        },
+        parents: [
           {
-            text: 'purple',
-            flags: [true, true, true, true, true, true],
-            successes: [queryPurple]
+            text: 'alpha',
+            flags: makeFlags('  ph '),
+            successes: [queryPh]
           },
           {
-            text: 'site',
-            flags: [false, false, false, false],
+            text: 'beta',
+            flags: makeFlags('    '),
             successes: []
           }
-        ],
-        parents: [
-          [{
-            text: 'alpha',
-            flags: [false, false, true, true, false],
-            successes: [queryPh]
-          }],
-          [{
-            text: 'beta',
-            flags: [false, false, false, false],
-            successes: []
-          }]
         ]
       },
       searchOneBookmark(bookmark, [queryPurple, queryPh]));
+
+  check('cross-word match',
+      {
+        url: 'http://one.net',
+        title: {
+          text: 'purple site',
+          flags: makeFlags('p      s   '),
+          successes: [queryPs]
+        },
+        parents: [
+          {
+            text: 'alpha',
+            flags: makeFlags('     '),
+            successes: []
+          },
+          {
+            text: 'beta',
+            flags: makeFlags('    '),
+            successes: []
+          }
+        ]
+      },
+      searchOneBookmark(bookmark, [queryPs]));
 });

@@ -6,14 +6,14 @@ function convertQueryToRegExp(query) {
   });
 
   var regex = RegExp(
-      escapedLetters.join('(\\S*?)'),
+      escapedLetters.join('(.*?)'),
       'i');
   regex.letters = letters;
 
   return regex;
 }
 
-function searchOneWord(queries) {
+function searchOneField(text, queries) {
   function initFlags(text) {
     var flags = [];
 
@@ -45,25 +45,22 @@ function searchOneWord(queries) {
     }
   }
 
-  return function(text) {
-    var flags = initFlags(text);
-    var successes = [];
+  var flags = initFlags(text);
+  var successes = [];
 
-    queries.forEach(function(query) {
-      updateMatchedLetters(text, flags, successes, query);
-    });
+  queries.forEach(function(query) {
+    updateMatchedLetters(text, flags, successes, query);
+  });
 
-    return { text: text, flags: flags, successes: successes };
-  };
+  return { text: text, flags: flags, successes: successes };
 }
 
 function searchOneBookmark(bookmark, queries) {
-  // TODO: run the queries on the whole name, not each word
   return {
     url: bookmark.url,
-    title: bookmark.title.split(' ').map(searchOneWord(queries)),
+    title: searchOneField(bookmark.title, queries),
     parents: bookmark.parents.map(function(parentTitle) {
-      return parentTitle.split(' ').map(searchOneWord(queries));
+      return searchOneField(parentTitle, queries);
     })
   };
 }
