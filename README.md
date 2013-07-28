@@ -37,4 +37,4 @@ or visit [GitHub](https://github.com/dcecile/bookmarkendex/issues) to
 submit an issue.
 
 
-[logo]: https://github.com/dcecile/bookmarkendex/raw/master/icon_28.png "Bookmarkendex"
+[logo]: https://github.com/dcecile/bookmarkendex/raw/master/images/icon_28.png "Bookmarkendex"
