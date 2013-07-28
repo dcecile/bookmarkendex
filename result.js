@@ -1,36 +1,3 @@
-function escapeXml(text) {
-  // Because JavaScript does not have builtin XML escaping
-  // APIs (besides the DOM), just escape everything in hex
-  return text.split('').map(function(letter) {
-    return '&#x' + letter.charCodeAt(0).toString(16) + ';';
-  }).join('');
-}
-
-function displaySearches(searches) {
-  return searches.map(function(search) {
-    var result = '';
-
-    var oldFlag = false;
-
-    search.flags.forEach(function(flag, i) {
-      if (!oldFlag && flag) {
-        result += '<match>';
-      }
-      else if (oldFlag && !flag) {
-        result += '</match>';
-      }
-      result += escapeXml(search.text[i]);
-      oldFlag = flag;
-    });
-
-    if (oldFlag) {
-      result += '</match>';
-    }
-
-    return result;
-  }).join(' ');
-}
-
 function findMatches(bookmarks, fullQuery) {
   // TODO: decide if queries can overlap
   var queries = fullQuery.split(' ').
@@ -64,13 +31,50 @@ function findMatches(bookmarks, fullQuery) {
     });
   });
 
+  return positiveResults;
+}
+
+function escapeXml(text) {
+  // Because JavaScript does not have builtin XML escaping
+  // APIs (besides the DOM), just escape everything in hex
+  return text.split('').map(function(letter) {
+    return '&#x' + letter.charCodeAt(0).toString(16) + ';';
+  }).join('');
+}
+
+function formatMatchedLetters(searches) {
+  return searches.map(function(search) {
+    var result = '';
+
+    var currentlyMatching = false;
+
+    search.flags.forEach(function(flag, i) {
+      if (!currentlyMatching && flag) {
+        result += '<match>';
+      }
+      else if (currentlyMatching && !flag) {
+        result += '</match>';
+      }
+      result += escapeXml(search.text[i]);
+      currentlyMatching = flag;
+    });
+
+    if (currentlyMatching) {
+      result += '</match>';
+    }
+
+    return result;
+  }).join(' ');
+}
+
+function formatResults(positiveResults) {
   return positiveResults.map(function(result) {
-    var description = displaySearches(result.title) +
+    var description = formatMatchedLetters(result.title) +
         ' <dim>-</dim> <url>' + escapeXml(result.url) + '</url>';
 
     if (result.parents.length > 0) {
       description += '<dim> - ' +
-          result.parents.map(displaySearches).join(' / ') + '</dim>';
+          result.parents.map(formatMatchedLetters).join(' / ') + '</dim>';
     }
 
     return {

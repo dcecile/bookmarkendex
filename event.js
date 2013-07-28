@@ -25,7 +25,6 @@ function updateResults(query, suggest) {
   }
   else
   {
-    console.time('onInputChanged');
     var currentSearchToken = {};
     latestSearchToken = currentSearchToken;
 
@@ -34,9 +33,9 @@ function updateResults(query, suggest) {
         return;
       }
 
-      var matches = findMatches(bookmarks, query);
+      var matches = formatResults(findMatches(bookmarks, query));
 
-      if (matches.length == 0) {
+      if (matches.length === 0) {
         setDefaultSuggestion('No bookmarks found for <match>%s</match>');
       }
       else {
@@ -51,7 +50,6 @@ function updateResults(query, suggest) {
       }
 
       previousMatches = matches;
-      console.timeEnd('onInputChanged');
     });
   }
 }
@@ -61,13 +59,17 @@ chrome.omnibox.onInputChanged.addListener(updateResults);
 chrome.omnibox.onInputEntered.addListener(function(text) {
   if (previousMatches.length > 0) {
     var urlPicked = previousMatches.some(function(match) {
-      return match.url == text;
+      return match.url === text;
     });
 
     if (urlPicked) {
+      // This event can get fired with either a full URL (from the suggestion
+      // 'content' property) if the user selects a specific suggestion
       navigate(text);
     }
     else {
+      // It can also get fired with the user's current query string when
+      // the user selects the default suggestion
       navigate(previousMatches[0].url);
     }
   }
@@ -99,4 +101,9 @@ chrome.bookmarks.onImportBegan.addListener(function() {
 chrome.bookmarks.onImportEnded.addListener(function() {
   bookmarkImportInProgress = false;
   updateBookmarksCache();
+});
+
+chrome.runtime.onInstalled.addListener(function(details) {
+  console.log('Installation event:', details.reason, details.previousVersion);
+  runAllUnitTests();
 });
