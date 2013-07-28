@@ -1,35 +1,79 @@
-function findMatches(bookmarks, fullQuery) {
-  // TODO: decide if queries can overlap
-  var queries = fullQuery.split(' ').
-      filter(function(query) { return query != ''; }).
-      map(function(query) { return convertQueryToRegExp(query); });
+function findMatches(bookmarks, queries) {
+  var searchResults = bookmarks.map(function(bookmark, originalIndex) {
+    var search = searchOneBookmark(bookmark, queries);
 
-  var searchResults = bookmarks.map(function(bookmark) {
-    return searchOneBookmark(bookmark, queries);
+    var directSuccesses = [];
+    var indirectSuccesses = [];
+
+    // Only register a match if there a match in the title
+    if (search.title.directSuccesses.length > 0 ||
+        search.title.indirectSuccesses.length > 0) {
+
+      function addSuccesses(fieldSuccesses, overallSuccesses) {
+        fieldSuccesses.forEach(function(success) {
+          overallSuccesses.push(success);
+        });
+      }
+
+      function recordSuccesses(field) {
+        addSuccesses(field.directSuccesses, directSuccesses);
+        addSuccesses(field.indirectSuccesses, indirectSuccesses);
+      };
+
+      // Record each match in a title or parent folder
+      recordSuccesses(search.title);
+      search.parents.forEach(recordSuccesses);
+    }
+
+    function removeDuplicates(original) {
+      return original.reduce(
+          function(unique, current) {
+            return unique.indexOf(current) < 0 ?
+                unique.concat([current]) :
+                unique;
+          },
+          []);
+    }
+
+    // Summarize all of the successful matches
+    directSuccesses = removeDuplicates(directSuccesses);
+    indirectSuccesses = removeDuplicates(indirectSuccesses);
+    var allSuccesses = removeDuplicates(
+        directSuccesses.concat(indirectSuccesses));
+
+    return {
+      originalIndex: originalIndex,
+      search: search,
+      directSuccesses: directSuccesses,
+      indirectSuccesses: indirectSuccesses,
+      allSuccesses: allSuccesses
+    };
   });
 
   var positiveResults = searchResults.filter(function(result) {
-    var overallSuccesses = { count: 0 };
-
-    var recordSuccesses = function(search) {
-      search.successes.forEach(function(success) {
-        overallSuccesses[success] = true;
-        overallSuccesses.count += 1;
-      });
-    };
-
-    recordSuccesses(result.title);
-
-    if (overallSuccesses.count > 0) {
-      result.parents.forEach(recordSuccesses);
-    }
-
-    return queries.every(function(query) {
-      return overallSuccesses[query];
-    });
+    return result.allSuccesses.length === queries.length;
   });
 
-  return positiveResults;
+  positiveResults.sort(function(resultA, resultB) {
+    // Sort first based on number of direct success matches
+    if (resultA.directSuccesses.length > resultB.directSuccesses.length) {
+      return -1;
+    }
+    else if (resultA.directSuccesses.length < resultB.directSuccesses.length) {
+      return +1;
+    }
+    else {
+      // Then, preserve the original bookmark order
+      if (resultA.originalIndex < resultB.originalIndex) {
+        return -1;
+      }
+      else {
+        return +1;
+      }
+    }
+  });
+
+  return positiveResults.map(function(result) { return result.search; });
 }
 
 function escapeXml(text) {

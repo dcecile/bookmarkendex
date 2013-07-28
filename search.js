@@ -1,16 +1,22 @@
-function convertQueryToRegExp(query) {
+function compileOneQuery(query) {
   var letters = query.split('');
 
   var escapedLetters = query.split('').map(function(letter) {
     return '\\u' + ('0000' + letter.charCodeAt(0).toString(16)).slice(-4);
   });
 
-  var regex = RegExp(
-      escapedLetters.join('(.*?)'),
-      'i');
-  regex.letters = letters;
+  return {
+    exactText: query,
+    letters: letters,
+    directRegex: RegExp(escapedLetters.join(''), 'i'),
+    indirectRegex: RegExp(escapedLetters.join('(.*?)'), 'i')
+  };
+}
 
-  return regex;
+function compileQueries(fullQuery) {
+  return fullQuery.split(' ').
+      filter(function(query) { return query != ''; }).
+      map(function(query) { return compileOneQuery(query); });
 }
 
 function searchOneField(text, queries) {
@@ -24,35 +30,58 @@ function searchOneField(text, queries) {
     return flags;
   }
 
-  function updateMatchedLetters(text, flags, successes, query) {
-    var unmatchedSections = query.exec(text);
+  function updateMatchedLetters(
+      text, flags, directSuccesses, indirectSuccesses, query) {
+    var directMatch = query.directRegex.exec(text);
 
-    if (unmatchedSections) {
-      var textIndex = unmatchedSections.index;
+    if (directMatch) {
+      var textIndex = directMatch.index;
 
-      query.letters.forEach(function(queryLetter, sectionIndex) {
-        for (var i = 0; i < queryLetter.length; i += 1) {
-          flags[textIndex] = true;
-          textIndex += 1;
-        }
+      for (var i = 0; i < query.exactText.length; i += 1) {
+        flags[textIndex] = true;
+        textIndex += 1;
+      }
 
-        if (sectionIndex < unmatchedSections.length - 1) {
-          textIndex += unmatchedSections[sectionIndex + 1].length;
-        }
-      });
+      directSuccesses.push(query);
+    }
+    else {
+      var indirectMatch = query.indirectRegex.exec(text);
 
-      successes.push(query);
+      if (indirectMatch) {
+        var textIndex = indirectMatch.index;
+        var unmatchedSections = indirectMatch.slice(1);
+
+        query.letters.forEach(function(queryLetter, sectionIndex) {
+          for (var i = 0; i < queryLetter.length; i += 1) {
+            flags[textIndex] = true;
+            textIndex += 1;
+          }
+
+          if (sectionIndex < unmatchedSections.length) {
+            textIndex += unmatchedSections[sectionIndex].length;
+          }
+        });
+
+        indirectSuccesses.push(query);
+      }
     }
   }
 
   var flags = initFlags(text);
-  var successes = [];
+  var directSuccesses = [];
+  var indirectSuccesses = [];
 
   queries.forEach(function(query) {
-    updateMatchedLetters(text, flags, successes, query);
+    updateMatchedLetters(
+        text, flags, directSuccesses, indirectSuccesses, query);
   });
 
-  return { text: text, flags: flags, successes: successes };
+  return {
+    text: text,
+    flags: flags,
+    directSuccesses: directSuccesses,
+    indirectSuccesses: indirectSuccesses
+  };
 }
 
 function searchOneBookmark(bookmark, queries) {

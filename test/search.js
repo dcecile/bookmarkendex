@@ -1,11 +1,66 @@
-unitTest(convertQueryToRegExp, function(check) {
+unitTest(compileOneQuery, function(check) {
+  function transform(query) {
+    query.directRegex = query.directRegex.toString();
+    query.indirectRegex = query.indirectRegex.toString();
+    return query;
+  }
+
   check('single letter',
-      '/\\u0061/i',
-      convertQueryToRegExp('a').toString());
+      {
+        exactText: 'a',
+        letters: ['a'],
+        directRegex: '/\\u0061/i',
+        indirectRegex: '/\\u0061/i'
+      },
+      transform(compileOneQuery('a')));
 
   check('single term',
-      '/\\u0061(.*?)\\u0062(.*?)\\u0063/i',
-      convertQueryToRegExp('abc').toString());
+      {
+        exactText: 'abc',
+        letters: ['a', 'b', 'c'],
+        directRegex: '/\\u0061\\u0062\\u0063/i',
+        indirectRegex: '/\\u0061(.*?)\\u0062(.*?)\\u0063/i'
+      },
+      transform(compileOneQuery('abc')));
+});
+
+unitTest(compileQueries, function(check) {
+  function transform(queries) {
+    queries.forEach(function(query) {
+      query.directRegex = query.directRegex.toString();
+      query.indirectRegex = query.indirectRegex.toString();
+      return query;
+    });
+    return queries;
+  }
+
+  check('single term',
+      [
+        {
+          exactText: 'abc',
+          letters: ['a', 'b', 'c'],
+          directRegex: '/\\u0061\\u0062\\u0063/i',
+          indirectRegex: '/\\u0061(.*?)\\u0062(.*?)\\u0063/i'
+        }
+      ],
+      transform(compileQueries('abc')));
+
+  check('multiple terms',
+      [
+        {
+          exactText: 'abc',
+          letters: ['a', 'b', 'c'],
+          directRegex: '/\\u0061\\u0062\\u0063/i',
+          indirectRegex: '/\\u0061(.*?)\\u0062(.*?)\\u0063/i'
+        },
+        {
+          exactText: 'de',
+          letters: ['d', 'e'],
+          directRegex: '/\\u0064\\u0065/i',
+          indirectRegex: '/\\u0064(.*?)\\u0065/i'
+        }
+      ],
+      transform(compileQueries(' abc  de ')));
 });
 
 unitTest(searchOneField, function(check) {
@@ -15,17 +70,16 @@ unitTest(searchOneField, function(check) {
     });
   }
 
-  var singleLetterQuery = /u/i;
-  singleLetterQuery.letters = ['u'];
+  var singleLetterQuery = compileOneQuery('u');
 
-  var multipleLetterQuery = /a(.*?)t(.*?)e/i;
-  multipleLetterQuery.letters = ['a', 't', 'e'];
+  var multipleLetterQuery = compileOneQuery('ate');
 
   check('single letter match',
       {
         text: 'buck',
         flags: makeFlags(' u  '),
-        successes: [singleLetterQuery]
+        directSuccesses: [singleLetterQuery],
+        indirectSuccesses: []
       },
       searchOneField('buck', [singleLetterQuery]));
 
@@ -33,7 +87,8 @@ unitTest(searchOneField, function(check) {
       {
         text: 'back',
         flags: makeFlags('    '),
-        successes: []
+        directSuccesses: [],
+        indirectSuccesses: []
       },
       searchOneField('back', [singleLetterQuery]));
 
@@ -41,7 +96,8 @@ unitTest(searchOneField, function(check) {
       {
         text: 'skated',
         flags: makeFlags('  ate '),
-        successes: [multipleLetterQuery]
+        directSuccesses: [multipleLetterQuery],
+        indirectSuccesses: []
       },
       searchOneField('skated', [multipleLetterQuery]));
 
@@ -49,15 +105,17 @@ unitTest(searchOneField, function(check) {
       {
         text: 'watches',
         flags: makeFlags(' at  e '),
-        successes: [multipleLetterQuery]
+        directSuccesses: [],
+        indirectSuccesses: [multipleLetterQuery]
       },
       searchOneField('watches', [multipleLetterQuery]));
 
-  check('multiple letter incorrect gaps match',
+  check('multiple letter optimal gaps match',
       {
         text: 'abate',
-        flags: makeFlags('a  te'),
-        successes: [multipleLetterQuery]
+        flags: makeFlags('  ate'),
+        directSuccesses: [multipleLetterQuery],
+        indirectSuccesses: []
       },
       searchOneField('abate', [multipleLetterQuery]));
 
@@ -65,7 +123,8 @@ unitTest(searchOneField, function(check) {
       {
         text: 'amidst',
         flags: makeFlags('      '),
-        successes: []
+        directSuccesses: [],
+        indirectSuccesses: []
       },
       searchOneField('amidst', [multipleLetterQuery]));
 
@@ -73,7 +132,8 @@ unitTest(searchOneField, function(check) {
       {
         text: 'BUCK',
         flags: makeFlags(' U  '),
-        successes: [singleLetterQuery]
+        directSuccesses: [singleLetterQuery],
+        indirectSuccesses: []
       },
       searchOneField('BUCK', [singleLetterQuery]));
 
@@ -81,7 +141,8 @@ unitTest(searchOneField, function(check) {
       {
         text: 'autumn',
         flags: makeFlags(' u    '),
-        successes: [singleLetterQuery]
+        directSuccesses: [singleLetterQuery],
+        indirectSuccesses: []
       },
       searchOneField('autumn', [singleLetterQuery]));
 
@@ -89,7 +150,8 @@ unitTest(searchOneField, function(check) {
       {
         text: 'a tree',
         flags: makeFlags('a t e '),
-        successes: [multipleLetterQuery]
+        directSuccesses: [],
+        indirectSuccesses: [multipleLetterQuery]
       },
       searchOneField('a tree', [multipleLetterQuery]));
 
@@ -97,7 +159,8 @@ unitTest(searchOneField, function(check) {
       {
         text: 'circulate',
         flags: makeFlags('    u ate'),
-        successes: [singleLetterQuery, multipleLetterQuery]
+        directSuccesses: [singleLetterQuery, multipleLetterQuery],
+        indirectSuccesses: []
       },
       searchOneField('circulate', [singleLetterQuery, multipleLetterQuery]));
 
@@ -105,7 +168,8 @@ unitTest(searchOneField, function(check) {
       {
         text: 'wasteful',
         flags: makeFlags(' a te u '),
-        successes: [singleLetterQuery, multipleLetterQuery]
+        directSuccesses: [singleLetterQuery],
+        indirectSuccesses: [multipleLetterQuery]
       },
       searchOneField('wasteful', [singleLetterQuery, multipleLetterQuery]));
 
@@ -113,7 +177,8 @@ unitTest(searchOneField, function(check) {
       {
         text: 'abstruse',
         flags: makeFlags('a  t u e'),
-        successes: [singleLetterQuery, multipleLetterQuery]
+        directSuccesses: [singleLetterQuery],
+        indirectSuccesses: [multipleLetterQuery]
       },
       searchOneField('abstruse', [singleLetterQuery, multipleLetterQuery]));
 
@@ -121,7 +186,8 @@ unitTest(searchOneField, function(check) {
       {
         text: 'amidst',
         flags: makeFlags('      '),
-        successes: []
+        directSuccesses: [],
+        indirectSuccesses: []
       },
       searchOneField('amidst', [singleLetterQuery, multipleLetterQuery]));
 });
@@ -139,20 +205,15 @@ unitTest(searchOneBookmark, function(check) {
     parents: ['alpha', 'beta']
   };
 
-  var queryPurple = /p(.*?)u(.*?)r(.*?)p(.*?)l(.*?)e/i;
-  queryPurple.letters = 'purple'.split('');
+  var queryPurple = compileOneQuery('purple');
 
-  var queryOne = /o(.*?)n(.*?)e/i;
-  queryOne.letters = 'one'.split('');
+  var queryOne = compileOneQuery('exactText');
 
-  var queryE = /e/i;
-  queryE.letters = 'e'.split('');
+  var queryE = compileOneQuery('e');
 
-  var queryPh = /p(.*?)h/i;
-  queryPh.letters = 'ph'.split('');
+  var queryPh = compileOneQuery('ph');
 
-  var queryPs = /p(.*?)s/i;
-  queryPs.letters = 'ps'.split('');
+  var queryPs = compileOneQuery('ps');
 
   check('simple title match',
       {
@@ -160,18 +221,21 @@ unitTest(searchOneBookmark, function(check) {
         title: {
           text: 'purple site',
           flags: makeFlags('purple     '),
-          successes: [queryPurple]
+          directSuccesses: [queryPurple],
+          indirectSuccesses: []
         },
         parents: [
           {
             text: 'alpha',
             flags: makeFlags('     '),
-            successes: []
+            directSuccesses: [],
+            indirectSuccesses: []
           },
           {
             text: 'beta',
             flags: makeFlags('    '),
-            successes: []
+            directSuccesses: [],
+            indirectSuccesses: []
           }
         ]
       },
@@ -183,18 +247,21 @@ unitTest(searchOneBookmark, function(check) {
         title: {
           text: 'purple site',
           flags: makeFlags('           '),
-          successes: []
+          directSuccesses: [],
+          indirectSuccesses: []
         },
         parents: [
           {
             text: 'alpha',
             flags: makeFlags('     '),
-            successes: []
+            directSuccesses: [],
+            indirectSuccesses: []
           },
           {
             text: 'beta',
             flags: makeFlags('    '),
-            successes: []
+            directSuccesses: [],
+            indirectSuccesses: []
           }
         ]
       },
@@ -206,18 +273,21 @@ unitTest(searchOneBookmark, function(check) {
         title: {
           text: 'purple site',
           flags: makeFlags('     e     '),
-          successes: [queryE]
+          directSuccesses: [queryE],
+          indirectSuccesses: []
         },
         parents: [
           {
             text: 'alpha',
             flags: makeFlags('     '),
-            successes: []
+            directSuccesses: [],
+            indirectSuccesses: []
           },
           {
             text: 'beta',
             flags: makeFlags(' e  '),
-            successes: [queryE]
+            directSuccesses: [queryE],
+            indirectSuccesses: []
           }
         ]
       },
@@ -229,18 +299,21 @@ unitTest(searchOneBookmark, function(check) {
         title: {
           text: 'purple site',
           flags: makeFlags('purple     '),
-          successes: [queryPurple]
+          directSuccesses: [queryPurple],
+          indirectSuccesses: []
         },
         parents: [
           {
             text: 'alpha',
             flags: makeFlags('  ph '),
-            successes: [queryPh]
+            directSuccesses: [queryPh],
+            indirectSuccesses: []
           },
           {
             text: 'beta',
             flags: makeFlags('    '),
-            successes: []
+            directSuccesses: [],
+            indirectSuccesses: []
           }
         ]
       },
@@ -252,18 +325,21 @@ unitTest(searchOneBookmark, function(check) {
         title: {
           text: 'purple site',
           flags: makeFlags('p      s   '),
-          successes: [queryPs]
+          directSuccesses: [],
+          indirectSuccesses: [queryPs]
         },
         parents: [
           {
             text: 'alpha',
             flags: makeFlags('     '),
-            successes: []
+            directSuccesses: [],
+            indirectSuccesses: []
           },
           {
             text: 'beta',
             flags: makeFlags('    '),
-            successes: []
+            directSuccesses: [],
+            indirectSuccesses: []
           }
         ]
       },

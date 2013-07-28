@@ -33,7 +33,8 @@ function updateResults(query, suggest) {
         return;
       }
 
-      var matches = formatResults(findMatches(bookmarks, query));
+      var matches = formatResults(
+          findMatches(bookmarks, compileQueries(query)));
 
       if (matches.length === 0) {
         setDefaultSuggestion('No bookmarks found for <match>%s</match>');

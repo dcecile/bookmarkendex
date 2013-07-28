@@ -20,6 +20,11 @@ unitTest(findMatches, function(check) {
       url: 'http://three.net',
       title: 'blue site',
       parents: ['delta']
+    },
+    {
+      url: 'http://four.net',
+      title: 'blue site',
+      parents: ['delta', 'blue folder']
     }
   ];
 
@@ -27,33 +32,35 @@ unitTest(findMatches, function(check) {
       [
         'http://one.net'
       ],
-      simplify(findMatches(bookmarks, 'purple')));
+      simplify(findMatches(bookmarks, compileQueries('purple'))));
 
   check('simple nonmatch',
       [
       ],
-      simplify(findMatches(bookmarks, 'burgundy')));
+      simplify(findMatches(bookmarks, compileQueries('burgundy'))));
 
   check('stable ordering',
       [
         'http://one.net',
         'http://two.net',
-        'http://three.net'
+        'http://three.net',
+        'http://four.net'
       ],
-      simplify(findMatches(bookmarks, 'e')));
+      simplify(findMatches(bookmarks, compileQueries('e'))));
 
-  check('no gap-based sorting',
+  check('gap-based sorting',
       [
-        'http://one.net',
-        'http://three.net'
+        'http://three.net',
+        'http://four.net',
+        'http://one.net'
       ],
-      simplify(findMatches(bookmarks, 'ue')));
+      simplify(findMatches(bookmarks, compileQueries('ue'))));
 
   check('forced title match',
       [
         'http://two.net'
       ],
-      simplify(findMatches(bookmarks, 'a')));
+      simplify(findMatches(bookmarks, compileQueries('a'))));
 });
 
 unitTest(escapeXml, function(check) {
